@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f7fa; /* Light blue background */
+        }
+        .container {
+            max-width: 800px;
+        }
+        .option-button {
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .option-button:hover:not(.correct):not(.incorrect) {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .correct {
+            background-color: #10b981; /* green-500 */
+            color: white;
+            animation: pulse-correct 0.5s ease-in-out;
+        }
+        .incorrect {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes pulse-correct {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .explanation {
+            border-left: 4px solid #06b6d4; /* cyan-600 */
+        }
+        .disabled-button {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="quiz-container" class="container mx-auto p-4 sm:p-8 bg-white rounded-xl shadow-lg">
+
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 text-gray-800">વર્તમાન બાબતોની ક્વિઝ</h1>
+
+        <!-- Quiz Display Area -->
+        <div id="question-area" class="mb-6">
+            <div id="question-number" class="text-lg font-semibold text-gray-500 mb-2"></div>
+            <p id="question-text" class="text-xl sm:text-2xl font-semibold text-gray-900 mb-4"></p>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Options will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Explanation and Score -->
+        <div class="mt-8">
+            <div id="explanation-container" class="hidden p-4 bg-gray-100 rounded-lg explanation transition-all duration-300">
+                <h3 class="text-lg font-semibold text-cyan-700 mb-2">વિગત:</h3>
+                <p id="explanation-text" class="text-gray-700 leading-relaxed"></p>
+            </div>
+            <div class="flex items-center justify-between mt-6">
+                <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-bold shadow-sm">
+                    સ્કોર: <span id="score-display">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between mt-8">
+            <button id="prev-button" class="px-6 py-3 bg-gray-300 text-gray-800 font-bold rounded-full shadow-md hover:bg-gray-400 transition-all duration-300 disabled-button">પાછળ</button>
+            <button id="next-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-full shadow-md hover:bg-blue-700 transition-all duration-300">આગળ</button>
+        </div>
+
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: ' "રાષ્ટ્રીય શિક્ષણ દિવસ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['11 નવેમ્બર', '12 નવેમ્બર', '13 નવેમ્બર', '14 નવેમ્બર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: દર વર્ષે 11 નવેમ્બર\n• ઉદ્દેશ્ય: ભારતના પ્રથમ શિક્ષણ મંત્રી મૌલાના અબુલ કલામ આઝાદની જયંતિની યાદમાં\n• શરૂઆત: ભારત સરકાર દ્વારા\n• પ્રથમ વખત ઉજવણી: 11 નવેમ્બર 2008'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્ર મહાસભા દ્વારા ઘોષિત "આંતરરાષ્ટ્રીય વન દિવસ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['5 જૂન', '21 માર્ચ', '22 એપ્રિલ', '15 સપ્ટેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: દર વર્ષે 21 માર્ચ\n• થીમ 2025: "Forests and Foods"\n• જાહેર કરનાર: સંયુક્ત રાષ્ટ્ર મહાસભા\n• પ્રથમ વખત ઉજવણી: 21 માર્ચ 2013'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્રએ વર્ષ 2025ને કયા રૂપમાં ઘોષિત કર્યું છે?',
+                options: ['International Year of Millets', 'International Year of Camelids', 'International Year of Glaciers\' Preservation', 'International Year of Peace and Trust'],
+                correctAnswerIndex: 2,
+                explanation: '• ઘોષણા: International Year of Glaciers\' Preservation\n• ઘોષણા કરનાર: સંયુક્ત રાષ્ટ્ર મહાસભા\n• ઉદ્દેશ્ય: જળવાયુ પરિવર્તનને કારણે ઝડપથી પીગળતા ગ્લેશિયરોની સુરક્ષા અને સંરક્ષણ પ્રત્યે જાગૃતિ વધારવી'
+            },
+            {
+                question: '7 નવેમ્બરના રોજ ઉજવાતો "રાષ્ટ્રીય કેન્સર જાગૃતિ દિવસ" કોની યાદમાં ઉજવવામાં આવે છે?',
+                options: ['જવાહરલાલ નેહરુ', 'મોહનદાસ ગાંધી', 'મેરી ક્યુરી', 'ઇન્દિરા ગાંધી'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: દર વર્ષે 7 નવેમ્બર (ભારતમાં)\n• યાદમાં: મેરી ક્યુરી (કેન્સર સંશોધનમાં યોગદાન)\n• થીમ 2024: "Hope, love, and strength: our weapons against cancer!"'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્ર દ્વારા "Zero Discrimination Day" ક્યારે ઉજવવામાં આવે છે અને 2025ની થીમ શું છે?',
+                options: ['10 ડિસેમ્બર - થીમ: Equal Future for All', '1 માર્ચ - થીમ: We Stand Together', '8 માર્ચ - થીમ: Inspire Inclusion', '20 જૂન - થીમ: Everyone Counts'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: દર વર્ષે 1 માર્ચ\n• થીમ 2025: "We Stand Together"\n• શરૂઆત: UNAIDS દ્વારા\n• પ્રથમ વખત ઉજવણી: 1 માર્ચ 2014'
+            },
+            {
+                question: 'વિશ્વ શૌચાલય દિવસ (World Toilet Day) કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['17 નવેમ્બર', '19 નવેમ્બર', '18 નવેમ્બર', '20 નવેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 19 નવેમ્બર (દર વર્ષે)\n• થીમ 2024: "Toilets - A Place for Peace"'
+            },
+            {
+                question: 'ભારતીય વાયુસેના દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['8 ઓક્ટોબર', '7 ઓક્ટોબર', '6 ઓક્ટોબર', '5 ઓક્ટોબર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 8 ઓક્ટોબર (1932માં સ્થાપના)\n• 2024માં ઉજવણી: 92મો વાયુસેના દિવસ'
+            },
+            {
+                question: 'વિશ્વ એઇડ્સ દિવસ 2024ની થીમ શું છે?',
+                options: ['Take the rights path: My health, my right!', 'End inequalities. End AIDS.', 'Empower. Educate. End HIV.', 'Together for health equity: Stop HIV stigma.'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 1 ડિસેમ્બર (દર વર્ષે)\n• ઉદ્દેશ્ય: HIV/AIDS પ્રત્યે જાગૃતિ\n• થીમ 2024: "Take the rights path: My health, my right!"'
+            },
+            {
+                question: '"માનવ અધિકાર દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['10 ફેબ્રુઆરી', '10 નવેમ્બર', '10 ડિસેમ્બર', '10 જાન્યુઆરી'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 10 ડિસેમ્બર (દર વર્ષે)\n• થીમ 2024: "Our Rights, Our Future, Right Now"'
+            },
+            {
+                question: 'આંતરરાષ્ટ્રીય પર્વત દિવસ કયા દિવસે ઉજવવામાં આવે છે?',
+                options: ['12 ડિસેમ્બર', '10 ડિસેમ્બર', '11 ડિસેમ્બર', '9 ડિસેમ્બર'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 11 ડિસેમ્બર\n• થીમ 2024: "Mountain solutions for a sustainable future-innovation, adaptation and youth"'
+            },
+            {
+                question: 'આંતરરાષ્ટ્રીય બાલિકા દિવસ 2024 ક્યારે ઉજવવામાં આવ્યો?',
+                options: ['14 ઓક્ટોબર', '12 ઓક્ટોબર', '13 ઓક્ટોબર', '11 ઓક્ટોબર'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 11 ઓક્ટોબર (દર વર્ષે)\n• ઉદ્દેશ્ય: છોકરીઓના અધિકારોની સુરક્ષા અને સમાનતા\n• થીમ 2024: "Girls\' vision for the future"'
+            },
+            {
+                question: 'વિશ્વ ખાદ્ય દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['16 ઓક્ટોબર', '15 ઓક્ટોબર', '13 ઓક્ટોબર', '14 ઓક્ટોબર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 16 ઓક્ટોબર\n• ઉદ્દેશ્ય: ભૂખમરો સમાપ્ત કરવો, પોષણ જાગૃતિ વધારવી\n• થીમ 2024: "Right to food for a better life and a better future"'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્ર દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['22 ઓક્ટોબર', '23 ઓક્ટોબર', '24 ઓક્ટોબર', '25 ઓક્ટોબર'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 24 ઓક્ટોબર (દર વર્ષે)\n• ઉદ્દેશ્ય: વૈશ્વિક શાંતિ અને સુરક્ષાનો પ્રચાર\n• સ્થાપના: 24 ઓક્ટોબર 1945'
+            },
+            {
+                question: 'વિશ્વ પોલિયો દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['23 ઓક્ટોબર', '24 ઓક્ટોબર', '28 ઓક્ટોબર', '26 ઓક્ટોબર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 24 ઓક્ટોબર\n• ઉદ્દેશ્ય: પોલિયો નાબૂદી માટે જાગૃતિ\n• થીમ 2024: "A Global Mission to Reach Every Child"'
+            },
+            {
+                question: 'આંતરરાષ્ટ્રીય સાક્ષરતા દિવસ 2024ની થીમ શું છે?',
+                options: ['Literacy for Peace and Human Rights', 'Promoting multilingual education: Literacy for mutual understanding and peace', 'Literacy for Inclusiveness and Gender Equality', 'Literacy for Sustainable Development and Income Generation'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 8 સપ્ટેમ્બર\n• ઉદ્દેશ્ય: સાક્ષરતાનો પ્રસાર\n• થીમ 2024: "Promoting multilingual education: Literacy for mutual understanding and peace"'
+            },
+            {
+                question: '29 ઓક્ટોબરના રોજ ઉજવાયેલા 9મા આયુર્વેદ દિવસ 2024ની થીમ શું હતી?',
+                options: ['Ayurveda innovation for global health', 'Ayurveda means India', 'Ayurveda for life', 'Ayurveda for healthy life'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 29 ઓક્ટોબર (ધન્વંતરિ જયંતિના રૂપમાં)\n• ઉદ્દેશ્ય: આયુર્વેદને વૈશ્વિક સ્વાસ્થ્ય પ્રણાલીમાં સ્થાપિત કરવો\n• થીમ 2024: "Ayurveda innovation for global health"'
+            },
+            {
+                question: 'વિશ્વ ઓઝોન દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['16 સપ્ટેમ્બર', '15 સપ્ટેમ્બર', '14 સપ્ટેમ્બર', '13 સપ્ટેમ્બર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 16 સપ્ટેમ્બર\n• ઉદ્દેશ્ય: ઓઝોન સ્તરના સંરક્ષણ પ્રત્યે જાગૃતિ\n• થીમ 2024: "Montreal Protocol: Advancing Climate Actions"'
+            },
+            {
+                question: '"રાષ્ટ્રીય અભિયંતા દિવસ" 15 સપ્ટેમ્બરના રોજ કોની યાદમાં ઉજવવામાં આવે છે?',
+                options: ['કલ્પના ચાવલા', 'સતીશ ધવન', 'એ.પી.જે. અબ્દુલ કલામ', 'ડૉ. એમ. વિશ્વેશ્વરૈયા'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 15 સપ્ટેમ્બર\n• સન્માન: ભારત રત્ન ડૉ. એમ. વિશ્વેશ્વરૈયાની જયંતિ\n• થીમ 2024: "Innovating for a Sustainable Future"'
+            },
+            {
+                question: 'ભારતમાં દર વર્ષે "રાષ્ટ્રીય પોષણ સપ્તાહ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['1 થી 7 સપ્ટેમ્બર', '7 થી 14 સપ્ટેમ્બર', '14 થી 21 સપ્ટેમ્બર', '21 થી 28 સપ્ટેમ્બર'],
+                correctAnswerIndex: 0,
+                explanation: '• અવધિ: 1 થી 7 સપ્ટેમ્બર (1982 થી)\n• ઉદ્દેશ્ય: પોષણ અને સંતુલિત આહારના મહત્વને પ્રોત્સાહન આપવું'
+            },
+            {
+                question: '"આંતરરાષ્ટ્રીય શાંતિ દિવસ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['21 સપ્ટેમ્બર', '20 સપ્ટેમ્બર', '19 સપ્ટેમ્બર', '18 સપ્ટેમ્બર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 21 સપ્ટેમ્બર\n• ઉદ્દેશ્ય: વૈશ્વિક અહિંસા અને શાંતિને પ્રોત્સાહન આપવું\n• થીમ 2024: "Cultivating a Culture of Peace"'
+            },
+            {
+                question: 'વર્લ્ડ ટૂરિઝમ ડે 2024ની થીમ શું હતી?',
+                options: ['Tourism and Sustainability', 'Tourism and Cultural Heritage', 'Tourism and Peace', 'Tourism and Community Development'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 27 સપ્ટેમ્બર\n• થીમ 2024: "Tourism and Peace"\n• યજમાન દેશ 2024: જ્યોર્જિયા (પૂર્વ યુરોપ)'
+            },
+            {
+                question: 'વિશ્વ હૃદય દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['28 સપ્ટેમ્બર', '29 સપ્ટેમ્બર', '30 સપ્ટેમ્બર', '1 ઓક્ટોબર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 29 સપ્ટેમ્બર\n• ઉદ્દેશ્ય: હૃદય રોગો પ્રત્યે જાગૃતિ\n• થીમ 2024: "Use Heart for Action"'
+            },
+            {
+                question: 'દર વર્ષે 9 ઓગસ્ટના રોજ કયો દિવસ ઉજવવામાં આવે છે?',
+                options: ['વિશ્વ આદિવાસી જનજાતિ દિવસ', 'વિશ્વ લઘુમતી દિવસ', 'વિશ્વ રણનિવારણ દિવસ', 'વિશ્વ યોગ દિવસ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 9 ઓગસ્ટ\n• ઉદ્દેશ્ય: આદિવાસી સમુદાયોના અધિકાર અને સુરક્ષાને પ્રોત્સાહન આપવું\n• થીમ 2024: "Protecting the rights of Indigenous Peoples in Voluntary Isolation & Initial Contact"'
+            },
+            {
+                question: '"વર્લ્ડ લાયન ડે" દર વર્ષે કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['10 ઓગસ્ટ', '9 ઓગસ્ટ', '11 ઓગસ્ટ', '12 ઓગસ્ટ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 10 ઓગસ્ટ\n• ઉદ્દેશ્ય: સિંહોના સંરક્ષણ અને જાગૃતિને પ્રોત્સાહન આપવું'
+            },
+            {
+                question: 'દર વર્ષે "આંતરરાષ્ટ્રીય યુવા દિવસ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['10 ઓગસ્ટ', '11 ઓગસ્ટ', '12 ઓગસ્ટ', '13 ઓગસ્ટ'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: દર વર્ષે 12 ઓગસ્ટ\n• ઉદ્દેશ્ય: યુવાનોની સમસ્યાઓ ઉજાગર કરવી અને સશક્ત બનાવવું\n• થીમ 2024: "From Clicks to Progress: Youth Digital Pathways for Sustainable Development"'
+            },
+            {
+                question: '23 ઓગસ્ટ 2024ના રોજ ઉજવાયેલા પ્રથમ "રાષ્ટ્રીય અંતરિક્ષ દિવસ"ની થીમ શું હતી?',
+                options: ['Our nation, ISRO pride', 'ISRO: The backbone of space', 'Touching Lives while Touching the Moon: India\'s Space Saga', 'Moon, our ISRO conquer'],
+                correctAnswerIndex: 2,
+                explanation: '• પ્રથમ વખત ઉજવણી: 23 ઓગસ્ટ 2024\n• ઉદ્દેશ્ય: ચંદ્રયાન-3ની સફળતાની યાદમાં\n• થીમ 2024: "Touching Lives while Touching the Moon: India\'s Space Saga"'
+            },
+            {
+                question: '29 ઓગસ્ટના રોજ ઉજવાતો "રાષ્ટ્રીય ખેલ દિવસ" કયા ખેલાડીની યાદમાં ઉજવવામાં આવે છે?',
+                options: ['મેજર ધ્યાનચંદ', 'કે.ડી. જાધવ', 'ધનરાજ પિલ્લૈ', 'બલબીર સિંહ સિનિયર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 29 ઓગસ્ટ (દર વર્ષે)\n• ઉદ્દેશ્ય: હોકીના જાદુગર મેજર ધ્યાનચંદની જયંતિના ઉપલક્ષ્યમાં'
+            },
+            {
+                question: 'વિશ્વ આદિવાસી જનજાતિ દિવસ દર વર્ષે કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['9 ઓગસ્ટ', '8 ઓગસ્ટ', '7 ઓગસ્ટ', '6 ઓગસ્ટ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 9 ઓગસ્ટ (દર વર્ષે)\n• પ્રથમ વખત ઉજવણી: 1994માં'
+            },
+            {
+                question: 'આંતરરાષ્ટ્રીય સાક્ષરતા દિવસ દર વર્ષે કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['7 સપ્ટેમ્બર', '8 સપ્ટેમ્બર', '9 સપ્ટેમ્બર', '10 સપ્ટેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 8 સપ્ટેમ્બર (દર વર્ષે)\n• ઉદ્દેશ્ય: વૈશ્વિક સ્તરે સાક્ષરતાને પ્રોત્સાહન આપવું\n• થીમ 2023: "Promoting literacy for a world in transition: Building the foundation for sustainable and peaceful societies"'
+            },
+            {
+                question: 'વિશ્વ ઓઝોન દિવસ 2023ની થીમ શું હતી?',
+                options: ['Ozone for life.', 'Montreal Protocol - keeping us, our food, and vaccines cool.', 'Global Cooperation Protecting Life on Earth.', 'Montreal Protocol: Fixing the Ozone Layer and Reducing Climate Change.'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 16 સપ્ટેમ્બર\n• થીમ 2023: "Montreal Protocol: Fixing the Ozone Layer and Reducing Climate Change"'
+            },
+            {
+                question: 'વિશ્વ પર્યટન દિવસ 2023ની થીમ શું હતી?',
+                options: ['Tourism and Rural Development', 'Tourism for Inclusive Growth', 'Rethinking Tourism', 'Tourism and Green Investments'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 27 સપ્ટેમ્બર\n• થીમ 2023: "Tourism and Green Investments"'
+            },
+            {
+                question: 'ભારતીય વાયુસેના દિવસ દર વર્ષે કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['7 ઓક્ટોબર', '8 ઓક્ટોબર', '9 ઓક્ટોબર', '10 ઓક્ટોબર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 8 ઓક્ટોબર (1932 થી)\n• ઉદ્દેશ્ય: ભારતીય વાયુસેનાની સ્થાપનાની યાદમાં'
+            },
+            {
+                question: 'વિશ્વ ખાદ્ય દિવસ દર વર્ષે કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['16 ઓક્ટોબર', '26 ઓક્ટોબર', '6 ઓક્ટોબર', '14 ઓક્ટોબર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 16 ઓક્ટોબર (દર વર્ષે)\n• થીમ 2023: "Water is Life, Water is Food. Leave No One Behind"'
+            },
+            {
+                question: 'ઉત્તરાખંડ સ્થાપના દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['9 નવેમ્બર', '10 નવેમ્બર', '8 નવેમ્બર', '7 નવેમ્બર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 9 નવેમ્બર (દર વર્ષે)'
+            },
+            {
+                question: '"વિશ્વ વિજ્ઞાન દિવસ ફોર પીસ એન્ડ ડેવલપમેન્ટ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['8 નવેમ્બર', '9 નવેમ્બર', '10 નવેમ્બર', '4 નવેમ્બર'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 10 નવેમ્બર\n• થીમ 2023: "Building Trust in Science"'
+            },
+            {
+                question: '8મા આયુર્વેદ દિવસ 2023ની થીમ શું હતી?',
+                options: ['Ayurveda for everyone on every day', 'Ayurveda for LIFE', 'Ayurveda or LIFE', 'Ayurveda for FUTURE'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 10 નવેમ્બર 2023\n• થીમ: "Ayurveda for everyone on every day"'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય શિક્ષણ દિવસ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['11 નવેમ્બર', '10 નવેમ્બર', '12 નવેમ્બર', '13 નવેમ્બર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 11 નવેમ્બર\n• ઉદ્દેશ્ય: મૌલાના અબુલ કલામ આઝાદની જયંતિની યાદમાં'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય એકતા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['31 ઓક્ટોબર', '30 નવેમ્બર', '1 નવેમ્બર', '30 ઓક્ટોબર'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 31 ઓક્ટોબર\n• ઉદ્દેશ્ય: સરદાર વલ્લભભાઈ પટેલની જયંતિની યાદમાં'
+            },
+            {
+                question: 'જનજાતીય ગૌરવ દિવસ (Tribal Pride Day) કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['10 નવેમ્બર', '15 નવેમ્બર', '2 ડિસેમ્બર', '12 ડિસેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 15 નવેમ્બર\n• ઉદ્દેશ્ય: બિરસા મુંડાની જયંતિની યાદમાં'
+            },
+            {
+                question: 'વિશ્વ શૌચાલય દિવસ દર વર્ષે કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['17 નવેમ્બર', '19 નવેમ્બર', '18 નવેમ્બર', '20 નવેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 19 નવેમ્બર\n• થીમ 2023: "Accelerating Change"'
+            },
+            {
+                question: 'મહિલાઓ વિરુદ્ધ હિંસા નાબૂદી માટેનો આંતરરાષ્ટ્રીય દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['24 નવેમ્બર', '25 નવેમ્બર', '26 નવેમ્બર', '27 નવેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 25 નવેમ્બર\n• થીમ 2023: "UNITE: Invest to Prevent Violence Against Women & Girls! #NoExcuse"'
+            },
+            {
+                question: 'ભારતમાં સંવિધાન દિવસ (Constitution Day) ક્યારે ઉજવવામાં આવે છે?',
+                options: ['25 નવેમ્બર', '26 નવેમ્બર', '27 નવેમ્બર', '28 નવેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 26 નવેમ્બર\n• શરૂઆત: 2015 થી'
+            },
+            {
+                question: 'વિશ્વ એઇડ્સ દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['29 નવેમ્બર', '30 નવેમ્બર', '1 ડિસેમ્બર', '2 ડિસેમ્બર'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 1 ડિસેમ્બર (1988 થી)\n• થીમ 2023: "Remember and Commit"'
+            },
+            {
+                question: 'BSF (સીમા સુરક્ષા બળ)એ 1 ડિસેમ્બર 2023ના રોજ કયો સ્થાપના દિવસ ઉજવ્યો?',
+                options: ['58મો', '59મો', '57મો', '60મો'],
+                correctAnswerIndex: 1,
+                explanation: '• BSF સ્થાપના દિવસ: 59મો\n• તારીખ: 1 ડિસેમ્બર 2023'
+            },
+            {
+                question: 'ભારતીય નૌસેના દિવસ ક્યારે ઉજવવામાં આવે છે?',
+                options: ['5 ડિસેમ્બર', '4 ડિસેમ્બર', '3 ડિસેમ્બર', '2 ડિસેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 4 ડિસેમ્બર (દર વર્ષે)'
+            },
+            {
+                question: '5 ડિસેમ્બરના રોજ દર વર્ષે કયા દિવસો ઉજવવામાં આવે છે?',
+                options: ['વિશ્વ મૃદા દિવસ', 'આંતરરાષ્ટ્રીય સ્વયંસેવક દિવસ', 'બંને', 'કોઈ નહીં'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 5 ડિસેમ્બર\n• બંને દિવસ: વિશ્વ મૃદા દિવસ અને આંતરરાષ્ટ્રીય સ્વયંસેવક દિવસ\n• થીમ 2023: "Soil and Water: A source of life"'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્રએ વર્ષ 2024ને કયા રૂપમાં ઘોષિત કર્યું છે?',
+                options: ['International Year of Millets', 'International Year of Camelids', 'International Year of Glass', 'International Year of Peace and Trust'],
+                correctAnswerIndex: 1,
+                explanation: '• ઉદ્દેશ્ય: ઊંટ પ્રજાતિઓની આજીવિકામાં ભૂમિકાને ઉજાગર કરવી\n• શામેલ દેશ: 90 થી વધુ દેશોમાં\n• ખાસ કરીને: આદિવાસી સમુદાયો માટે'
+            },
+            {
+                question: 'ભારતમાં 22 ડિસેમ્બરના રોજ "રાષ્ટ્રીય ગણિત દિવસ" કોની જયંતિ પર ઉજવવામાં આવે છે?',
+                options: ['હરીશ ચંદ્ર', 'શ્રીનિવાસ રામાનુજન', 'શકુંતલા દેવી', 'પી.સી. મહાલનોબિસ'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 22 ડિસેમ્બર\n• ઉદ્દેશ્ય: મહાન ગણિતશાસ્ત્રી શ્રીનિવાસ રામાનુજનની જયંતિની યાદમાં'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય કિસાન દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['21 ડિસેમ્બર', '22 ડિસેમ્બર', '23 ડિસેમ્બર', '24 ડિસેમ્બર'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 23 ડિસેમ્બર (2001 થી દર વર્ષે)'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય ઉપભોક્તા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['23 ડિસેમ્બર', '24 ડિસેમ્બર', '26 ડિસેમ્બર', '25 ડિસેમ્બર'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 24 ડિસેમ્બર\n• વર્લ્ડ કન્ઝ્યુમર રાઇટ્સ ડે: 15 માર્ચ\n• થીમ 2023: "Empowering consumers through clean energy transitions"'
+            },
+            {
+                question: 'પૂર્વ પ્રધાનમંત્રી અટલ બિહારી વાજપેયીની કઈ જયંતિ 25 ડિસેમ્બર 2023ના રોજ ઉજવવામાં આવી?',
+                options: ['99મી', '98મી', '97મી', '96મી'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 25 ડિસેમ્બર 2023\n• અવસર: અટલ બિહારી વાજપેયીની 99મી જયંતિ'
+            },
+            {
+                question: 'DRDOનો કયો સ્થાપના દિવસ 1 જાન્યુઆરી 2024ના રોજ ઉજવવામાં આવ્યો?',
+                options: ['64મો', '65મો', '66મો', '67મો'],
+                correctAnswerIndex: 2,
+                explanation: '• DRDO: રક્ષા અનુસંધાન એવમ વિકાસ સંગઠન\n• સ્થાપના દિવસ: 1 જાન્યુઆરી 2024\n• સંખ્યા: 66મો'
+            },
+            {
+                question: '"પ્રવાસી ભારતીય દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['9 જાન્યુઆરી', '8 જાન્યુઆરી', '7 જાન્યુઆરી', '6 જાન્યુઆરી'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 9 જાન્યુઆરી\n• ઉદ્દેશ્ય: ભારતના વિકાસમાં પ્રવાસી ભારતીયોના યોગદાનને સન્માન આપવું'
+            },
+            {
+                question: '"વિશ્વ હિન્દી દિવસ" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['2003', '1977', '1995', '2006'],
+                correctAnswerIndex: 3,
+                explanation: '• શરૂઆત: 10 જાન્યુઆરી 2006\n• દર વર્ષે ઉજવણી: 10 જાન્યુઆરીના રોજ'
+            },
+            {
+                question: '12 જાન્યુઆરીના રોજ ઉજવાતો "રાષ્ટ્રીય યુવા દિવસ" કોની જયંતિ પર ઉજવવામાં આવે છે?',
+                options: ['સ્વામી વિવેકાનંદ', 'બી.આર. આંબેડકર', 'દયાનંદ સરસ્વતી', 'મદન મોહન માલવીય'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 12 જાન્યુઆરી\n• ઉદ્દેશ્ય: સ્વામી વિવેકાનંદની જયંતિની યાદમાં'
+            },
+            {
+                question: '"ભારતીય સેના દિવસ" કઈ તારીખે અને કોના સન્માનમાં ઉજવવામાં આવે છે?',
+                options: ['જનરલ પી.પી. કુમારમંગલમ', 'જનરલ કે.એમ. કરિઅપ્પા', 'ફિલ્ડ માર્શલ માણેકશૉ', 'જનરલ કે.એસ. થિમૈયા'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 15 જાન્યુઆરી (દર વર્ષે)\n• સન્માન: ભારતીય સેનાના પ્રથમ ભારતીય કમાન્ડર-ઇન-ચીફ જનરલ કે.એમ. કરિઅપ્પા'
+            },
+            {
+                question: 'નેતાજી સુભાષ ચંદ્ર બોઝના સન્માનમાં "પરાક્રમ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['23 જાન્યુઆરી', '22 જાન્યુઆરી', '21 જાન્યુઆરી', '24 જાન્યુઆરી'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 23 જાન્યુઆરી\n• ઉદ્દેશ્ય: નેતાજી સુભાષ ચંદ્ર બોઝની જયંતિની યાદમાં'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય બાલિકા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['24 જાન્યુઆરી', '23 જાન્યુઆરી', '25 જાન્યુઆરી', '22 જાન્યુઆરી'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 24 જાન્યુઆરી\n• ઉદ્દેશ્ય: બાલિકાઓના અધિકાર અને સમાનતા માટે જાગૃતિ'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય મતદાતા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['24 જાન્યુઆરી', '25 જાન્યુઆરી', '23 જાન્યુઆરી', '22 જાન્યુઆરી'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 25 જાન્યુઆરી (દર વર્ષે)\n• ઉદ્દેશ્ય: ભારત નિર્વાચન આયોગની સ્થાપનાની યાદમાં (1950)\n• થીમ 2024: "Nothing Like Voting, I Vote For Sure"'
+            },
+            {
+                question: '"રાષ્ટ્રીય પર્યટન દિવસ 2024"ની થીમ શું છે?',
+                options: ['Incredible State of India', 'Look at Your Country', 'Tourism for Inclusive Growth', 'Stable Journey, Timeless Memory'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 25 જાન્યુઆરી\n• થીમ 2024: "Stable Journey, Timeless Memory"'
+            },
+            {
+                question: '2 ફેબ્રુઆરીના રોજ કયો દિવસ ઉજવવામાં આવે છે?',
+                options: ['વિશ્વ પરિવાર દિવસ', 'વિશ્વ આર્દ્રભૂમિ દિવસ', 'વિશ્વ પર્યાવરણ દિવસ', 'ભારતીય તટરક્ષક દિવસ'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 2 ફેબ્રુઆરી\n• ઉદ્દેશ્ય: આર્દ્રભૂમિ (Wetlands)ના મહત્વને ઉજાગર કરવું\n• થીમ 2024: "Wetlands and Human Wellbeing"'
+            },
+            {
+                question: '"વિશ્વ કેન્સર દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['4 ફેબ્રુઆરી', '5 ફેબ્રુઆરી', '3 ફેબ્રુઆરી', '2 ફેબ્રુઆરી'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 4 ફેબ્રુઆરી (2000 થી)\n• ઉદ્દેશ્ય: કેન્સર પ્રત્યે જાગૃતિ\n• થીમ 2024: "Close the care gap: Everyone deserves access to cancer care"'
+            },
+            {
+                question: '"રાષ્ટ્રીય વિજ્ઞાન દિવસ 2024"ની થીમ શું છે?',
+                options: ['Goal 2047 for Developed India', 'Indigenous Technology for Developed India', 'Developed India and Indigenous Technology', 'Developed India, Our Science'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 28 ફેબ્રુઆરી\n• ઉદ્દેશ્ય: ભારતમાં વિજ્ઞાનના મહત્વને પ્રોત્સાહન આપવું\n• થીમ 2024: "Indigenous Technology for Developed India"'
+            },
+            {
+                question: '"રાષ્ટ્રીય વિજ્ઞાન દિવસ" પ્રથમ વખત કયા વર્ષમાં ઉજવવામાં આવ્યો?',
+                options: ['1995', '1997', '1987', '2000'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 28 ફેબ્રુઆરી\n• ઉદ્દેશ્ય: ડૉ. સી.વી. રામન દ્વારા "રામન પ્રભાવ"ની શોધની યાદમાં (1928)\n• થીમ 2024: "Indigenous Technology for Developed India"'
+            },
+            {
+                question: '"વિશ્વ દાળ દિવસ 2024"ની થીમ શું છે?',
+                options: ['Pulses: nourishing soils and people', 'Pulses to empower youth in achieving sustainable agrifood systems', 'Pulses are for you #LovePulses', 'Pulses for a sustainable future'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 10 ફેબ્રુઆરી\n• ઉદ્દેશ્ય: દાળના પોષણ અને કૃષિમાં યોગદાનને પ્રોત્સાહન આપવું\n• થીમ 2024: "Pulses: nourishing soils and people"'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્ર દ્વારા "International Arabian Leopard Day" પ્રથમ વખત ક્યારે ઉજવવામાં આવ્યો?',
+                options: ['11 ફેબ્રુઆરી', '10 ફેબ્રુઆરી', '12 ફેબ્રુઆરી', '13 ફેબ્રુઆરી'],
+                correctAnswerIndex: 1,
+                explanation: '• પ્રથમ વખત ઉજવણી: 10 ફેબ્રુઆરી 2024\n• ઉદ્દેશ્ય: Arabian Leopard પ્રજાતિના સંરક્ષણ માટે જાગૃતિ'
+            },
+            {
+                question: '"આંતરરાષ્ટ્રીય માતૃભાષા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['20 ફેબ્રુઆરી', '19 ફેબ્રુઆરી', '23 ફેબ્રુઆરી', '21 ફેબ્રુઆરી'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 21 ફેબ્રુઆરી (દર વર્ષે)\n• ઉદ્દેશ્ય: માતૃભાષાઓના સંરક્ષણ અને સંવર્ધન\n• થીમ 2024: "Multilingual Education: A pillar of learning and intergenerational learning"'
+            },
+            {
+                question: '"વિશ્વ વન્યજીવ દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Connecting People and Planet: Exploring Digital Innovation in Wildlife Conservation', 'Wildlife and Humans', 'Sustaining all life on Earth', 'Start Day with Wildlife Conservation'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 3 માર્ચ\n• ઉદ્દેશ્ય: વન્યજીવ સંરક્ષણ પ્રત્યે જાગૃતિ\n• થીમ 2024: "Connecting People and Planet: Exploring Digital Innovation in Wildlife Conservation"'
+            },
+            {
+                question: '"આંતરરાષ્ટ્રીય મહિલા દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Women and World', 'Inspire Inclusion', 'Women Powerful Than Men', 'Let\'s Break'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 8 માર્ચ\n• ઉદ્દેશ્ય: મહિલાઓના અધિકાર અને સશક્તિકરણ માટે જાગૃતિ\n• થીમ 2024: "Inspire Inclusion"'
+            },
+            {
+                question: '"વિશ્વ ઉપભોક્તા અધિકાર દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['14 માર્ચ', '16 માર્ચ', '15 માર્ચ', '13 માર્ચ'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 15 માર્ચ (1983 થી)\n• ઉદ્દેશ્ય: ઉપભોક્તા અધિકારો પ્રત્યે જાગૃતિ\n• થીમ 2024: "Fair and Responsible Al for Consumers"'
+            },
+            {
+                question: '"અર્થ અવર" (Earth Hour) સંબંધિત કયા વિધાનો સાચા છે?',
+                options: ['આ UNEP અને UNESCOની પહેલ છે', 'તેમાં લોકો એક કલાક માટે લાઇટ બંધ કરે છે', 'આ જળવાયુ પરિવર્તન અને ગ્રહ સંરક્ષણની જાગૃતિ માટેનું આંદોલન છે', 'ફક્ત 2 અને 3 સાચા છે'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: માર્ચ મહિનાનો છેલ્લો શનિવાર\n• ઉદ્દેશ્ય: પૃથ્વી સંરક્ષણ અને જળવાયુ પરિવર્તન પર જાગૃતિ\n• થીમ 2024: "Uniting for Our One Shared Home"'
+            },
+            {
+                question: '"વિશ્વ ટીબી દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['24 માર્ચ', '25 માર્ચ', '26 માર્ચ', '27 માર્ચ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 24 માર્ચ\n• ઉદ્દેશ્ય: ડૉ. રોબર્ટ કોચ દ્વારા TB બેક્ટેરિયાની શોધ (1882)\n• થીમ 2024: "Yes! We Can End TB"'
+            },
+            {
+                question: '"ઓડિશા સ્થાપના દિવસ (ઉત્કલ દિવસ)" ક્યારે ઉજવવામાં આવે છે?',
+                options: ['1 એપ્રિલ', '2 એપ્રિલ', '3 એપ્રિલ', '4 એપ્રિલ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 1 એપ્રિલ (દર વર્ષે)\n• અન્ય નામ: ઉત્કલ દિવસ'
+            },
+            {
+                question: '"વિશ્વ જળ દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Valuing Water', 'Groundwater: Making the Invisible Visible', 'Water for Peace', 'Importance of Freshwater'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 22 માર્ચ (1993 થી)\n• ઉદ્દેશ્ય: જળ સંરક્ષણના મહત્વ પર જાગૃતિ\n• થીમ 2024: "Water for Peace"'
+            },
+            {
+                question: '"વિશ્વ સ્વાસ્થ્ય દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Save Planet, Save Health', 'Heart Beat: A Rhythm of Health', 'My Health, My Right', 'Our Planet, Our Health'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 7 એપ્રિલ (દર વર્ષે)\n• ઉદ્દેશ્ય: સ્વાસ્થ્ય પ્રત્યે જાગૃતિ\n• થીમ 2024: "My Health, My Right"'
+            },
+            {
+                question: '"વિશ્વ પૃથ્વી દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Invest in Our Planet', 'Earth is Life', 'Planet vs. Plastics', 'Life and Planet'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 22 એપ્રિલ (દર વર્ષે)\n• ઉદ્દેશ્ય: પૃથ્વી અને પર્યાવરણ સંરક્ષણ માટે જાગૃતિ\n• થીમ 2024: "Planet vs. Plastics"'
+            },
+            {
+                question: '"વિશ્વ પુસ્તક અને કૉપીરાઇટ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['24 એપ્રિલ', '21 એપ્રિલ', '22 એપ્રિલ', '23 એપ્રિલ'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 23 એપ્રિલ (દર વર્ષે)\n• થીમ 2024: "Read Your Way"'
+            },
+            {
+                question: '"વિશ્વ મેલેરિયા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['24 એપ્રિલ', '25 એપ્રિલ', '26 એપ્રિલ', '27 એપ્રિલ'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 25 એપ્રિલ (દર વર્ષે)\n• થીમ 2024: "Accelerating the Fight Against Malaria for a More Equitable World"'
+            },
+            {
+                question: '"વિશ્વ બૌદ્ધિક સંપદા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['23 એપ્રિલ', '24 એપ્રિલ', '25 એપ્રિલ', '26 એપ્રિલ'],
+                correctAnswerIndex: 3,
+                explanation: '• તારીખ: 26 એપ્રિલ (દર વર્ષે)\n• થીમ 2024: "IP and the SDGs: Building Our Common Future with Innovation and Creativity"'
+            },
+            {
+                question: '"આંતરરાષ્ટ્રીય શ્રમિક દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['1 મે', '2 મે', '3 મે', '4 મે'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 1 મે (Labour Day)\n• થીમ 2024: "Ensuring Safety and Health at Work in a Changing Climate"'
+            },
+            {
+                question: '"વિશ્વ પ્રેસ સ્વતંત્રતા દિવસ 2024"ની થીમ શું છે?',
+                options: ['A Press for the Planet: Journalism in the Face of the Environmental Crisis', 'Critical Minds: The Role of Media in Advancing Peaceful, Just, and Inclusive Societies', 'Journalism Without Fear or Favor', 'Media for Democracy: Journalism and Elections in a Time of Disinformation'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 3 મે (દર વર્ષે)\n• થીમ 2024: "A Press for the Planet: Journalism in the Face of the Environmental Crisis"'
+            },
+            {
+                question: 'સીમા સડક સંગઠન (BRO)નો કયો સ્થાપના દિવસ 7 મે 2024ના રોજ ઉજવવામાં આવ્યો?',
+                options: ['64મો', '66મો', '65મો', '67મો'],
+                correctAnswerIndex: 2,
+                explanation: '• સ્થાપના દિવસ: 7 મે 2024\n• કાર્ય: ભારતની સીમા અને આંતરરાષ્ટ્રીય ક્ષેત્રોમાં સડક નિર્માણ'
+            },
+            {
+                question: 'ભારતમાં દર વર્ષે 11 મેના રોજ કયો રાષ્ટ્રીય દિવસ ઉજવવામાં આવે છે?',
+                options: ['રાષ્ટ્રીય શિક્ષણ દિવસ', 'રાષ્ટ્રીય પ્રૌદ્યોગિકી દિવસ', 'રાષ્ટ્રીય શાંતિ દિવસ', 'રાષ્ટ્રીય કિસાન દિવસ'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 11 મે (દર વર્ષે)\n• ઉદ્દેશ્ય: પોખરણ પરમાણુ પરીક્ષણ 1998ની સફળતાની યાદમાં'
+            },
+            {
+                question: 'ભારતમાં "રાષ્ટ્રીય ડેંગૂ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['15 મે', '16 મે', '17 મે', '18 મે'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 16 મે\n• ઉદ્દેશ્ય: ડેંગૂની રોકથામ પ્રત્યે જાગૃતિ\n• થીમ 2024: "Dengue Prevention: Our Responsibility for a Safer Tomorrow"'
+            },
+            {
+                question: '"વિશ્વ જૈવ વિવિધતા દિવસ 2024"ની થીમ શું છે?',
+                options: ['Protect Our Planet', 'Be a Part of the Plan', 'Save the Future', 'Act Now for Nature'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 22 મે (દર વર્ષે)\n• થીમ 2024: "Be a Part of the Plan"'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્ર દ્વારા "International Markhor Day" કઈ તારીખે ઘોષિત કરવામાં આવ્યો છે?',
+                options: ['22 મે', '23 મે', '24 મે', '25 મે'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 24 મે\n• ઉદ્દેશ્ય: માર્ખોર પ્રજાતિ અને તેમના નિવાસ સ્થાનના સંરક્ષણ માટે જાગૃતિ'
+            },
+            {
+                question: '"વિશ્વ દુગ્ધ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['31 મે', '1 જૂન', '2 જૂન', '3 જૂન'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 1 જૂન (દર વર્ષે)\n• ઉદ્દેશ્ય: દુગ્ધ ઉત્પાદનોની ઉપયોગિતા અને મહત્વને પ્રોત્સાહન આપવું\n• થીમ 2024: "Celebrating the Vital Role of Dairy in Global Nutrition"'
+            },
+            {
+                question: '"વિશ્વ પર્યાવરણ દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Beat Plastic Pollution', 'Our Land. Our Future. We are #GenerationRestoration', 'Restore Earth', 'For a Green Planet'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 5 જૂન (દર વર્ષે)\n• ઉદ્દેશ્ય: પર્યાવરણ સંરક્ષણની જાગૃતિ\n• થીમ 2024: "Our Land. Our Future. We are #GenerationRestoration"'
+            },
+            {
+                question: '"વિશ્વ મહાસાગર દિવસ 2024"ની થીમ શું હતી?',
+                options: ['The Ocean: Life and Livelihood', 'Catalyzing Action for Our Ocean & Climate', 'Ocean Life', 'Blue for Planet'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 8 જૂન (દર વર્ષે)\n• ઉદ્દેશ્ય: મહાસાગરોની રક્ષા અને સંરક્ષણ\n• થીમ 2024: "Catalyzing Action for Our Ocean & Climate"'
+            },
+            {
+                question: '"વિશ્વ રક્તદાતા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['12 જૂન', '13 જૂન', '14 જૂન', '15 જૂન'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 14 જૂન\n• ઉદ્દેશ્ય: રક્તદાનના મહત્વને પ્રોત્સાહન આપવું\n• થીમ 2024: "20 Years of Celebrating Giving: Thank You Blood Donors!"'
+            },
+            {
+                question: '"વિશ્વ રણનિવારણ અને સૂકા રોકથામ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['15 જૂન', '16 જૂન', '17 જૂન', '18 જૂન'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 17 જૂન\n• ઉદ્દેશ્ય: ભૂમિ સંરક્ષણ અને સૂકા રોકથામ\n• થીમ 2024: "United for Land: Our Legacy. Our Future."'
+            },
+            {
+                question: '"આંતરરાષ્ટ્રીય યોગ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['19 જૂન', '20 જૂન', '21 જૂન', '22 જૂન'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 21 જૂન (દર વર્ષે)\n• ઉદ્દેશ્ય: યોગના મહત્વને વૈશ્વિક સ્તરે ફેલાવવું\n• થીમ 2024: "Yoga for Self and Society"'
+            },
+            {
+                question: '"સંયુક્ત રાષ્ટ્ર લોક સેવા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['22 જૂન', '23 જૂન', '24 જૂન', '25 જૂન'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 23 જૂન\n• ઉદ્દેશ્ય: લોક સેવામાં ઉત્કૃષ્ટતાને પ્રોત્સાહિત કરવી'
+            },
+            {
+                question: '"વિશ્વ માદક પદાર્થ નિષેધ દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Say No To Drugs', 'The Evidence is Clear: Invest in Prevention', 'Healthy Youth, Safe Future', 'Drugs Free Life'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 26 જૂન\n• ઉદ્દેશ્ય: નશામુક્ત સમાજની જાગૃતિ\n• થીમ 2024: "The Evidence is Clear: Invest in Prevention"'
+            },
+            {
+                question: '"રાષ્ટ્રીય સાંખ્યિકી દિવસ" ભારતમાં કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['28 જૂન', '29 જૂન', '30 જૂન', '1 જુલાઈ'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 29 જૂન\n• ઉદ્દેશ્ય: પ્રસિદ્ધ સાંખ્યિકીવિદ્ પી.સી. મહાલનોબિસની જયંતિની યાદમાં\n• થીમ 2024: "Use of Data for Decision Making"'
+            },
+            {
+                question: '"ડૉક્ટર્સ ડે" ભારતમાં કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['30 જૂન', '1 જુલાઈ', '2 જુલાઈ', '3 જુલાઈ'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 1 જુલાઈ\n• ઉદ્દેશ્ય: ડૉક્ટરોના યોગદાનને સન્માનિત કરવું\n• ઉજવણી: ડૉ. બિધાન ચંદ્ર રૉયની જયંતિ અને પુણ્યતિથિની યાદમાં'
+            },
+            {
+                question: '"વિશ્વ જનસંખ્યા દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['12 જુલાઈ', '10 જુલાઈ', '11 જુલાઈ', '13 જુલાઈ'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 11 જુલાઈ (દર વર્ષે)\n• ઉદ્દેશ્ય: વધતી જનસંખ્યાના મુદ્દાઓ પર જાગૃતિ\n• થીમ 2024: "Leave No One Behind, Count Everyone"'
+            },
+            {
+                question: 'કેન્દ્ર સરકાર દ્વારા "સંવિધાન હત્યા દિવસ" કઈ તારીખે ઘોષિત કરવામાં આવ્યો છે?',
+                options: ['25 જૂન', '26 જૂન', '27 જૂન', '28 જૂન'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 25 જૂન (દર વર્ષે)\n• ઉદ્દેશ્ય: ભારતમાં કટોકટી (Emergency) લાગુ કરવાની યાદમાં ઉજવવામાં આવે છે'
+            },
+            {
+                question: 'સંયુક્ત રાષ્ટ્ર દ્વારા "વિશ્વ યુવા કૌશલ દિવસ 2024"ની થીમ શું હતી?',
+                options: ['Transforming Youth Skills for the Future', 'Youth Skills for Peace and Development', 'Skilling Teachers, Trainers, and Youth for a Transformative Future', 'Reimagining Youth Skills Post-Pandemic'],
+                correctAnswerIndex: 1,
+                explanation: '• તારીખ: 15 જુલાઈ (દર વર્ષે)\n• ઉદ્દેશ્ય: યુવાનોમાં કૌશલ વિકાસને પ્રોત્સાહન આપવું\n• થીમ 2024: "Youth Skills for Peace and Development"'
+            },
+            {
+                question: '"નેલ્સન મંડેલા આંતરરાષ્ટ્રીય દિવસ" પ્રથમ વખત કયા વર્ષમાં ઉજવવામાં આવ્યો?',
+                options: ['2010', '2012', '2014', '2016'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 18 જુલાઈ (દર વર્ષે)\n• ઉદ્દેશ્ય: નેલ્સન મંડેલાની જયંતિની યાદમાં\n• પ્રથમ વખત ઉજવણી: વર્ષ 2010'
+            },
+            {
+                question: '"કારગિલ વિજય દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['26 જુલાઈ', '27 જુલાઈ', '28 જુલાઈ', '29 જુલાઈ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 26 જુલાઈ (દર વર્ષે)\n• ઉદ્દેશ્ય: 1999ના કારગિલ યુદ્ધમાં ભારતની વિજયની યાદમાં'
+            },
+            {
+                question: '"આંતરરાષ્ટ્રીય વાઘ દિવસ" કઈ તારીખે ઉજવવામાં આવે છે?',
+                options: ['29 જુલાઈ', '27 જુલાઈ', '26 જુલાઈ', '28 જુલાઈ'],
+                correctAnswerIndex: 0,
+                explanation: '• તારીખ: 29 જુલાઈ (દર વર્ષે)\n• ઘોષણા: સેંટ પીટર્સબર્ગ ટાઈગર સમિટ 2010માં'
+            },
+            {
+                question: '27 જુલાઈ 2024ના રોજ CRPF (કેન્દ્રીય રિઝર્વ પોલીસ બળ)નો કયો સ્થાપના દિવસ ઉજવવામાં આવ્યો?',
+                options: ['83મો', '84મો', '86મો', '85મો'],
+                correctAnswerIndex: 2,
+                explanation: '• તારીખ: 27 જુલાઈ 2024\n• સંખ્યા: 86મો સ્થાપના દિવસ\n• સંગઠન: કેન્દ્રીય રિઝર્વ પોલીસ બળ (CRPF)'
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainerEl = document.getElementById('options-container');
+        const scoreDisplayEl = document.getElementById('score-display');
+        const explanationContainerEl = document.getElementById('explanation-container');
+        const explanationTextEl = document.getElementById('explanation-text');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+
+        function displayQuestion() {
+            // Reset state
+            isAnswered = false;
+            optionsContainerEl.innerHTML = '';
+            explanationContainerEl.classList.add('hidden');
+            
+            const currentQuestion = questions[currentQuestionIndex];
+            
+            questionNumberEl.textContent = `પ્રશ્ન ${currentQuestionIndex + 1} / ${questions.length}`;
+            questionTextEl.textContent = currentQuestion.question;
+
+            // Update button states
+            if (currentQuestionIndex === 0) {
+                prevButton.classList.add('disabled-button');
+                prevButton.disabled = true;
+            } else {
+                prevButton.classList.remove('disabled-button');
+                prevButton.disabled = false;
+            }
+
+            if (currentQuestionIndex === questions.length - 1) {
+                nextButton.classList.add('disabled-button');
+                nextButton.disabled = true;
+            } else {
+                nextButton.classList.remove('disabled-button');
+                nextButton.disabled = false;
+            }
+            
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+                button.classList.add(
+                    'option-button',
+                    'p-4', 'sm:p-5', 'bg-gray-200', 'text-gray-800', 'text-left',
+                    'rounded-lg', 'font-medium', 'shadow-sm', 'hover:bg-gray-300',
+                    'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-500'
+                );
+                button.onclick = () => handleAnswer(index);
+                optionsContainerEl.appendChild(button);
+            });
+        }
+
+        function handleAnswer(selectedIndex) {
+            if (isAnswered) return;
+
+            isAnswered = true;
+            const currentQuestion = questions[currentQuestionIndex];
+            const buttons = optionsContainerEl.querySelectorAll('button');
+
+            const correctAnswerIndex = currentQuestion.correctAnswerIndex;
+            const selectedButton = buttons[selectedIndex];
+            const correctButton = buttons[correctAnswerIndex];
+
+            // Highlight the selected answer
+            if (selectedIndex === correctAnswerIndex) {
+                selectedButton.classList.add('correct');
+                score += 1;
+            } else {
+                selectedButton.classList.add('incorrect');
+                correctButton.classList.add('correct');
+                score -= 0.25;
+            }
+            
+            // Update score display
+            scoreDisplayEl.textContent = score.toFixed(2);
+            
+            // Show explanation
+            explanationTextEl.textContent = currentQuestion.explanation;
+            explanationContainerEl.classList.remove('hidden');
+
+            // Disable all buttons after an answer is clicked
+            buttons.forEach(button => {
+                button.disabled = true;
+                button.style.cursor = 'not-allowed';
+                button.classList.remove('hover:bg-gray-300', 'hover:transform');
+            });
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion();
+            }
+        }
+
+        prevButton.addEventListener('click', prevQuestion);
+        nextButton.addEventListener('click', nextQuestion);
+
+        // Initial load
+        window.onload = displayQuestion;
+    </script>
+</body>
+</html>
